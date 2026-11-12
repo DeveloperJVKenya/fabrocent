@@ -1,0 +1,39 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "fabrocent",
+          "appId": "1:220454626938:android:09b3b5be094ac96f507dc3",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "fabrocent",
+          "configurations": {
+            "android": "1:220454626938:android:09b3b5be094ac96f507dc3",
+            "ios": "1:220454626938:ios:fae5c520099ef28c507dc3",
+            "macos": "1:220454626938:ios:fae5c520099ef28c507dc3",
+            "web": "1:220454626938:web:556e59c0b7469c51507dc3",
+            "windows": "1:220454626938:web:9b5635795a93c53b507dc3"
+          }
+        }
+      }
+    }
+  },
+  "hosting": {
+    "public": "build/web",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}

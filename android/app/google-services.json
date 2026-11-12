@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "220454626938",
+    "project_id": "fabrocent",
+    "storage_bucket": "fabrocent.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:220454626938:android:09b3b5be094ac96f507dc3",
+        "android_client_info": {
+          "package_name": "com.example.fabrocent"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "220454626938-bnnsuipk42jv2d48itepoht253764n1b.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAl-k5bfdg0sO7S6IaEc42UajSBUaiHqJU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "220454626938-bnnsuipk42jv2d48itepoht253764n1b.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
