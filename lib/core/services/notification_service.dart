@@ -1,5 +1,6 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart'; // needed for notificationServiceProvider
+import '../providers/settings_provider.dart';
 import 'app_logger.dart';
 
 class NotificationService {
@@ -41,6 +42,10 @@ class NotificationService {
     required double spentAmount,
     required double allocatedAmount,
   }) async {
+    if (!await isBudgetAlertsEnabled()) {
+      AppLogger.notif('Budget alert suppressed — user disabled budget alerts');
+      return;
+    }
     AppLogger.notif('Budget alert: $categoryName at ${usagePercent.toStringAsFixed(0)}%');
     final isOver = usagePercent >= 100;
     final title = isOver
@@ -70,6 +75,10 @@ class NotificationService {
     required double amount,
     required bool isCredit,
   }) async {
+    if (!await isTransactionAlertsEnabled()) {
+      AppLogger.notif('Transaction alert suppressed — user disabled transaction alerts');
+      return;
+    }
     final title = isCredit ? 'Money Received' : 'Payment Made';
     final body = '$description — Ksh ${amount.toStringAsFixed(0)}';
 

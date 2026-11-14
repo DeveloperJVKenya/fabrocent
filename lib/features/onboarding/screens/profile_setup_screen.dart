@@ -34,7 +34,13 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
   bool _loading  = false;
   int  _page     = 0;
 
-  static const _stepLabels = ['Personal', 'Profile', 'M-Pesa'];
+  int get _totalSteps => _segment.hasBusinessAccount ? 3 : 2;
+
+  List<String> get _stepLabels => _segment.hasBusinessAccount
+      ? ['Personal', 'Profile', 'Business']
+      : ['Personal', 'Profile'];
+
+  bool get _isLastPage => _page == _totalSteps - 1;
 
   @override
   void initState() {
@@ -51,11 +57,19 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
   }
 
   Future<void> _save() async {
+    final name = _nameController.text.trim();
+    if (name.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter your name before continuing.')),
+      );
+      if (_page != 0) setState(() => _page = 0);
+      return;
+    }
+
     setState(() => _loading = true);
 
     try {
       final user     = FirebaseAuth.instance.currentUser!;
-      final name     = _nameController.text.trim();
       final rawPhone = _phoneController.text.trim();
       String phone   = rawPhone.isNotEmpty ? rawPhone : (user.phoneNumber ?? '');
       if (phone.startsWith('0')) phone = '+254${phone.substring(1)}';
@@ -197,7 +211,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
         children: [
           Row(
             children: [
-              for (int i = 0; i < 3; i++) ...[
+              for (int i = 0; i < _totalSteps; i++) ...[
                 if (i > 0)
                   Expanded(
                     child: Container(
@@ -218,7 +232,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
           Row(
             children: [
               Text(
-                'Step ${_page + 1} of 3',
+                'Step ${_page + 1} of $_totalSteps',
                 style: TextStyle(
                   color:      Colors.white.withValues(alpha: 0.55),
                   fontWeight: FontWeight.w500,
@@ -267,12 +281,27 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
           else
             const SizedBox.shrink(),
           _GradientButton(
-            label:   _page < 2 ? s.next : s.profileStartTracking,
-            icon:    _page < 2 ? Icons.arrow_forward_rounded : Icons.check_rounded,
+            label:   !_isLastPage ? s.next : s.profileStartTracking,
+            icon:    !_isLastPage ? Icons.arrow_forward_rounded : Icons.check_rounded,
             loading: _loading,
             onPressed: _loading
                 ? null
-                : () => _page < 2 ? setState(() => _page++) : _save(),
+                : () {
+                    if (_page == 0) {
+                      // Validate name before advancing
+                      if (_nameController.text.trim().isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Please enter your name to continue.')),
+                        );
+                        return;
+                      }
+                      setState(() => _page++);
+                    } else if (!_isLastPage) {
+                      setState(() => _page++);
+                    } else {
+                      _save();
+                    }
+                  },
           ),
         ],
       ),
@@ -329,7 +358,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       decoration: BoxDecoration(
-                        color:  selected ? AppTheme.primaryContainer : theme.colorScheme.surfaceContainerHighest,
+                        color:  selected ? AppTheme.primary.withValues(alpha: 0.1) : theme.colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: selected ? AppTheme.primary : Colors.transparent,
@@ -382,7 +411,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: selected ? AppTheme.primaryContainer : theme.cardColor,
+                    color: selected ? AppTheme.primary.withValues(alpha: 0.08) : theme.cardColor,
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
                       color: selected ? AppTheme.primary : theme.dividerColor,
@@ -715,7 +744,7 @@ class _ToggleCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: value ? AppTheme.primaryContainer : theme.cardColor,
+          color: value ? AppTheme.primary.withValues(alpha: 0.08) : theme.cardColor,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: value ? AppTheme.primary : theme.dividerColor,
@@ -743,7 +772,7 @@ class _ToggleCard extends StatelessWidget {
               value:            value,
               onChanged:        onChanged,
               activeThumbColor: AppTheme.primary,
-              activeTrackColor: AppTheme.primaryContainer,
+              activeTrackColor: AppTheme.primary.withValues(alpha: 0.3),
             ),
           ],
         ),

@@ -1,5 +1,6 @@
-﻿import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
+import 'package:material_ui/material_ui.dart';
+
 import '../../../core/services/app_logger.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -30,15 +31,16 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   void initState() {
     super.initState();
+    AppLogger.startup('SplashScreen mounted — animation starting');
 
-    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.light,
-      systemNavigationBarColor: Colors.transparent,
-      systemNavigationBarIconBrightness: Brightness.light,
-    ));
-
-    AppLogger.ui('SplashScreen: initializing animation (1800ms)');
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+        systemNavigationBarColor: Colors.transparent,
+        systemNavigationBarIconBrightness: Brightness.light,
+      ),
+    );
 
     _ctrl = AnimationController(
       vsync: this,
@@ -47,48 +49,53 @@ class _SplashScreenState extends State<SplashScreen>
 
     _logoScale = Tween<double>(begin: 0.6, end: 1.0).animate(
       CurvedAnimation(
-          parent: _ctrl,
-          curve: const Interval(0.08, 0.48, curve: Curves.easeOutBack)),
+        parent: _ctrl,
+        curve: const Interval(0.08, 0.48, curve: Curves.easeOutBack),
+      ),
     );
     _logoFade = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
-          parent: _ctrl,
-          curve: const Interval(0.08, 0.38, curve: Curves.easeOut)),
+        parent: _ctrl,
+        curve: const Interval(0.08, 0.38, curve: Curves.easeOut),
+      ),
     );
     _wordFade = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
-          parent: _ctrl,
-          curve: const Interval(0.38, 0.62, curve: Curves.easeOut)),
+        parent: _ctrl,
+        curve: const Interval(0.38, 0.62, curve: Curves.easeOut),
+      ),
     );
-    _wordSlide = Tween<Offset>(
-            begin: const Offset(0, 0.5), end: Offset.zero)
-        .animate(CurvedAnimation(
+    _wordSlide = Tween<Offset>(begin: const Offset(0, 0.5), end: Offset.zero)
+        .animate(
+          CurvedAnimation(
             parent: _ctrl,
-            curve: const Interval(0.38, 0.62, curve: Curves.easeOutCubic)));
+            curve: const Interval(0.38, 0.62, curve: Curves.easeOutCubic),
+          ),
+        );
     _tagFade = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
-          parent: _ctrl,
-          curve: const Interval(0.57, 0.80, curve: Curves.easeOut)),
+        parent: _ctrl,
+        curve: const Interval(0.57, 0.80, curve: Curves.easeOut),
+      ),
     );
     _dotsFade = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
-          parent: _ctrl,
-          curve: const Interval(0.75, 1.0, curve: Curves.easeOut)),
+        parent: _ctrl,
+        curve: const Interval(0.75, 1.0, curve: Curves.easeOut),
+      ),
     );
 
-    _ctrl.addStatusListener((status) {
-      if (status == AnimationStatus.completed) {
-        AppLogger.ui('SplashScreen: animation complete — waiting for router redirect');
-      }
+    _ctrl.forward().then((_) {
+      AppLogger.startup(
+        'SplashScreen animation complete (1800ms) — '
+        'waiting for router redirect to fire',
+      );
     });
-
-    _ctrl.forward();
-    AppLogger.ui('SplashScreen: animation started');
   }
 
   @override
   void dispose() {
-    AppLogger.ui('SplashScreen: disposed');
+    AppLogger.startup('SplashScreen disposed — router navigated away');
     _ctrl.dispose();
     super.dispose();
   }
@@ -106,17 +113,13 @@ class _SplashScreenState extends State<SplashScreen>
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF071B0C),
-              Color(0xFF0E3D1E),
-              Color(0xFF1A5C31),
-            ],
+            colors: [Color(0xFF071B0C), Color(0xFF0E3D1E), Color(0xFF1A5C31)],
             stops: [0.0, 0.45, 1.0],
           ),
         ),
         child: Stack(
           children: [
-            // â”€â”€ Decorative orbs (match welcome screen language) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            // ── Decorative orbs (match welcome screen language) ──────────
             Positioned(
               top: -size.width * 0.28,
               right: -size.width * 0.28,
@@ -132,12 +135,13 @@ class _SplashScreenState extends State<SplashScreen>
               top: size.height * 0.60,
               right: size.width * 0.08,
               child: _Orb(
-                  diameter: size.width * 0.18,
-                  opacity: 0.07,
-                  color: const Color(0xFFE09810)),
+                diameter: size.width * 0.18,
+                opacity: 0.07,
+                color: const Color(0xFFE09810),
+              ),
             ),
 
-            // â”€â”€ Main content â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            // ── Main content ──────────────────────────────────────────────
             SafeArea(
               child: Column(
                 children: [
@@ -207,7 +211,7 @@ class _SplashScreenState extends State<SplashScreen>
   }
 }
 
-// â”€â”€â”€ Logo badge â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Logo badge ───────────────────────────────────────────────────────────────
 
 class _LogoBadge extends StatelessWidget {
   @override
@@ -237,16 +241,13 @@ class _LogoBadge extends StatelessWidget {
       padding: const EdgeInsets.all(18),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(14),
-        child: Image.asset(
-          'assets/images/logo.jpeg',
-          fit: BoxFit.cover,
-        ),
+        child: Image.asset('assets/images/logo.jpeg', fit: BoxFit.cover),
       ),
     );
   }
 }
 
-// â”€â”€â”€ Decorative orb â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Decorative orb ───────────────────────────────────────────────────────────
 
 class _Orb extends StatelessWidget {
   final double diameter;
@@ -272,7 +273,7 @@ class _Orb extends StatelessWidget {
   }
 }
 
-// â”€â”€â”€ Pulsing dots â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Pulsing dots ─────────────────────────────────────────────────────────────
 
 class _PulsingDots extends StatefulWidget {
   const _PulsingDots();

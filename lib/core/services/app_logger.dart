@@ -50,7 +50,17 @@ class AppLogger {
     StackTrace? stackTrace,
   }) {
     if (!kDebugMode) return;
-    dev.log(msg, name: tag, level: level,
-        error: error, stackTrace: stackTrace);
+
+    if (kIsWeb) {
+      // dart:developer does not route to the terminal on Flutter web.
+      // debugPrint() goes to both the terminal and the Chrome console.
+      final prefix = level >= 1000 ? '❌' : level >= 900 ? '⚠️ ' : 'ℹ️ ';
+      debugPrint('$prefix [$tag] $msg'
+          '${error != null ? '\n   error: $error' : ''}'
+          '${stackTrace != null ? '\n   $stackTrace' : ''}');
+    } else {
+      dev.log(msg, name: tag, level: level,
+          error: error, stackTrace: stackTrace);
+    }
   }
 }

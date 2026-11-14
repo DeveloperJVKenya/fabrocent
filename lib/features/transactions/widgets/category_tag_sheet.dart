@@ -1,5 +1,6 @@
-﻿import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
+
 import '../../../core/l10n/inherited_strings.dart';
 import '../../../core/models/transaction.dart';
 import '../../../core/models/transaction_category.dart';
@@ -36,7 +37,9 @@ class _CategoryTagSheetState extends ConsumerState<CategoryTagSheet> {
   @override
   void initState() {
     super.initState();
-    _selected = widget.transaction.isUntagged ? null : widget.transaction.categoryId;
+    _selected = widget.transaction.isUntagged
+        ? null
+        : widget.transaction.categoryId;
     _aiSuggestion = widget.transaction.isUntagged
         ? AiCategorizationService.suggestCategory(widget.transaction)
         : Future.value(null);
@@ -44,10 +47,12 @@ class _CategoryTagSheetState extends ConsumerState<CategoryTagSheet> {
 
   Future<void> _confirm() async {
     if (_selected == null) return;
-    await ref.read(categoryUpdateProvider.notifier).updateCategory(
-      transactionId: widget.transaction.id,
-      categoryId: _selected!,
-    );
+    await ref
+        .read(categoryUpdateProvider.notifier)
+        .updateCategory(
+          transactionId: widget.transaction.id,
+          categoryId: _selected!,
+        );
     // Refresh both dashboard totals and budget spent
     ref.invalidate(dashboardSummaryProvider);
     ref.invalidate(budgetAllocationsProvider);
@@ -122,7 +127,9 @@ class _CategoryTagSheetState extends ConsumerState<CategoryTagSheet> {
                     Text(
                       widget.transaction.formattedAmount,
                       style: theme.textTheme.headlineSmall?.copyWith(
-                        color: isCredit ? AppTheme.incomeGreen : AppTheme.expenseRed,
+                        color: isCredit
+                            ? AppTheme.incomeGreen
+                            : AppTheme.expenseRed,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
@@ -140,7 +147,10 @@ class _CategoryTagSheetState extends ConsumerState<CategoryTagSheet> {
             Expanded(
               child: ListView(
                 controller: controller,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 children: [
                   // AI suggestion row
                   if (widget.transaction.isUntagged)
@@ -158,11 +168,13 @@ class _CategoryTagSheetState extends ConsumerState<CategoryTagSheet> {
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 150),
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 14, vertical: 12),
+                                horizontal: 14,
+                                vertical: 12,
+                              ),
                               decoration: BoxDecoration(
                                 color: _selected == aiCat.id
                                     ? aiCat.color.withValues(alpha: 0.15)
-                                    : AppTheme.primaryContainer.withValues(alpha: 0.5),
+                                    : Theme.of(ctx).colorScheme.onSurface.withValues(alpha: 0.06),
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
                                   color: _selected == aiCat.id
@@ -174,8 +186,10 @@ class _CategoryTagSheetState extends ConsumerState<CategoryTagSheet> {
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const Text('âœ¨',
-                                      style: TextStyle(fontSize: 14)),
+                                  const Text(
+                                    '✨',
+                                    style: TextStyle(fontSize: 14),
+                                  ),
                                   const SizedBox(width: 6),
                                   Text(
                                     '${s.aiSuggests}: ',
@@ -184,8 +198,10 @@ class _CategoryTagSheetState extends ConsumerState<CategoryTagSheet> {
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
-                                  Text(aiCat.emoji,
-                                      style: const TextStyle(fontSize: 15)),
+                                  Text(
+                                    aiCat.emoji,
+                                    style: const TextStyle(fontSize: 15),
+                                  ),
                                   const SizedBox(width: 4),
                                   Text(
                                     aiCat.name,
@@ -197,8 +213,11 @@ class _CategoryTagSheetState extends ConsumerState<CategoryTagSheet> {
                                   ),
                                   if (_selected == aiCat.id) ...[
                                     const SizedBox(width: 4),
-                                    Icon(Icons.check,
-                                        size: 14, color: aiCat.color),
+                                    Icon(
+                                      Icons.check,
+                                      size: 14,
+                                      color: aiCat.color,
+                                    ),
                                   ],
                                 ],
                               ),
@@ -218,22 +237,28 @@ class _CategoryTagSheetState extends ConsumerState<CategoryTagSheet> {
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 150),
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 14, vertical: 10),
+                            horizontal: 14,
+                            vertical: 10,
+                          ),
                           decoration: BoxDecoration(
                             color: isSelected
                                 ? cat.color.withValues(alpha: 0.15)
                                 : theme.cardColor,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: isSelected ? cat.color : theme.dividerColor,
+                              color: isSelected
+                                  ? cat.color
+                                  : theme.dividerColor,
                               width: isSelected ? 2 : 1,
                             ),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Text(cat.emoji,
-                                  style: const TextStyle(fontSize: 16)),
+                              Text(
+                                cat.emoji,
+                                style: const TextStyle(fontSize: 16),
+                              ),
                               const SizedBox(width: 6),
                               Text(
                                 cat.name,
@@ -259,7 +284,10 @@ class _CategoryTagSheetState extends ConsumerState<CategoryTagSheet> {
             // Confirm button
             Padding(
               padding: EdgeInsets.fromLTRB(
-                16, 8, 16, MediaQuery.paddingOf(context).bottom + 16,
+                16,
+                8,
+                16,
+                MediaQuery.paddingOf(context).bottom + 16,
               ),
               child: ElevatedButton(
                 onPressed: _selected == null ? null : _confirm,

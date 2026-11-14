@@ -29,14 +29,48 @@ final fcmTokenProvider = FutureProvider<String?>((ref) async {
 
 final authStateProvider = StreamProvider<User?>((ref) {
   AppLogger.auth('Creating auth state subscription');
-  return ref.watch(firebaseAuthProvider).authStateChanges().map((user) {
-    if (user == null) {
-      AppLogger.auth('Auth state changed → signed out');
-    } else {
-      AppLogger.auth('✅ Auth state changed → signed in uid=${user.uid}');
+
+  // Emit null after 5s if Firebase Auth hasn't responded (web IndexedDB lag).
+  AppLogger.auth('authStateProvider: subscribing to authStateChanges()');
+  final controller = StreamController<User?>();
+  bool firstEventReceived = false;
+
+  final timer = Timer(const Duration(seconds: 5), () {
+    if (!firstEventReceived && !controller.isClosed) {
+      AppLogger.warn(
+        '🔐 AUTH',
+        'Auth state timed out after 5s — emitting null to unblock router',
+      );
+      controller.add(null);
     }
-    return user;
   });
+
+  final sub = ref.watch(firebaseAuthProvider).authStateChanges().listen(
+    (user) {
+      firstEventReceived = true;
+      timer.cancel();
+      if (controller.isClosed) return;
+      AppLogger.auth('authStateProvider: event received — user=${user?.uid ?? "null"}');
+      if (user == null) {
+        AppLogger.auth('Auth state changed → signed out');
+      } else {
+        AppLogger.auth('✅ Auth state changed → signed in uid=${user.uid}');
+      }
+      controller.add(user);
+    },
+    onError: (Object e, StackTrace st) {
+      AppLogger.error('🔐 AUTH', 'Auth state stream error', e, st);
+      if (!controller.isClosed) controller.addError(e, st);
+    },
+  );
+
+  ref.onDispose(() {
+    timer.cancel();
+    sub.cancel();
+    controller.close();
+  });
+
+  return controller.stream;
 });
 
 final currentUserProvider = Provider<User?>((ref) {

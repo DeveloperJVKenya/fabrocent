@@ -76,6 +76,7 @@ class UserProfile {
 
   UserProfile copyWith({
     String? displayName,
+    String? phoneNumber,
     UserSegment? segment,
     AppLanguage? language,
     bool? hasPochi,
@@ -88,7 +89,7 @@ class UserProfile {
   }) {
     return UserProfile(
       uid: uid,
-      phoneNumber: phoneNumber,
+      phoneNumber: phoneNumber ?? this.phoneNumber,
       displayName: displayName ?? this.displayName,
       segment: segment ?? this.segment,
       language: language ?? this.language,

@@ -19,6 +19,9 @@ enum TransactionType {
   tillReceive,
   paybillReceive,
   unknown,
+  // Bank-sourced transactions (appended at end — safe for ordinal storage)
+  bankDebit,
+  bankCredit,
 }
 
 extension TransactionTypeX on TransactionType {
@@ -32,6 +35,7 @@ extension TransactionTypeX on TransactionType {
         TransactionType.reversal,
         TransactionType.tillReceive,
         TransactionType.paybillReceive,
+        TransactionType.bankCredit,
       }.contains(this);
 
   bool get isPochi => this == TransactionType.pochiReceive || this == TransactionType.pochiSend;
@@ -60,6 +64,8 @@ extension TransactionTypeX on TransactionType {
       case TransactionType.tillReceive:      return 'Till Payment Received';
       case TransactionType.paybillReceive:   return 'Paybill Payment Received';
       case TransactionType.unknown:          return 'Other';
+      case TransactionType.bankDebit:        return 'Bank Payment';
+      case TransactionType.bankCredit:       return 'Bank Receipt';
     }
   }
 
@@ -85,6 +91,8 @@ extension TransactionTypeX on TransactionType {
       case TransactionType.tillReceive:      return 'Pokea (Till)';
       case TransactionType.paybillReceive:   return 'Pokea (Paybill)';
       case TransactionType.unknown:          return 'Nyingine';
+      case TransactionType.bankDebit:        return 'Malipo (Benki)';
+      case TransactionType.bankCredit:       return 'Pokea (Benki)';
     }
   }
 }

@@ -1,6 +1,7 @@
-﻿import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
+
 import '../../../core/models/transaction_category.dart';
 import '../../../core/theme/app_theme.dart';
 import '../providers/budget_provider.dart';
@@ -18,8 +19,7 @@ class _BudgetSetupScreenState extends ConsumerState<BudgetSetupScreen> {
   final Map<TransactionCategoryId, double> _percents = {};
   int _page = 0;
 
-  double get _totalPercent =>
-      _percents.values.fold(0.0, (a, b) => a + b);
+  double get _totalPercent => _percents.values.fold(0.0, (a, b) => a + b);
 
   double get _expectedIncome =>
       double.tryParse(_incomeController.text.replaceAll(',', '')) ?? 0;
@@ -64,7 +64,9 @@ class _BudgetSetupScreenState extends ConsumerState<BudgetSetupScreen> {
       _percents.entries.where((e) => e.value > 0),
     );
 
-    await ref.read(budgetSetupProvider.notifier).saveBudget(
+    await ref
+        .read(budgetSetupProvider.notifier)
+        .saveBudget(
           expectedIncome: _expectedIncome,
           categoryPercents: filtered,
         );
@@ -116,10 +118,7 @@ class _BudgetSetupScreenState extends ConsumerState<BudgetSetupScreen> {
 
           Expanded(
             child: _page == 0
-                ? _IncomeStep(
-                    formKey: _formKey,
-                    controller: _incomeController,
-                  )
+                ? _IncomeStep(formKey: _formKey, controller: _incomeController)
                 : _AllocationStep(
                     percents: _percents,
                     totalPercent: _totalPercent,
@@ -130,7 +129,11 @@ class _BudgetSetupScreenState extends ConsumerState<BudgetSetupScreen> {
 
           Padding(
             padding: EdgeInsets.fromLTRB(
-                16, 8, 16, MediaQuery.paddingOf(context).bottom + 16),
+              16,
+              8,
+              16,
+              MediaQuery.paddingOf(context).bottom + 16,
+            ),
             child: ElevatedButton(
               onPressed: saving ? null : _next,
               child: saving
@@ -138,7 +141,9 @@ class _BudgetSetupScreenState extends ConsumerState<BudgetSetupScreen> {
                       height: 22,
                       width: 22,
                       child: CircularProgressIndicator(
-                          color: Colors.white, strokeWidth: 2.5),
+                        color: Colors.white,
+                        strokeWidth: 2.5,
+                      ),
                     )
                   : Text(_page == 0 ? 'Next' : 'Save Budget'),
             ),
@@ -167,8 +172,10 @@ class _IncomeStep extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('What is your expected\nmonthly income?',
-                style: theme.textTheme.headlineMedium),
+            Text(
+              'What is your expected\nmonthly income?',
+              style: theme.textTheme.headlineMedium,
+            ),
             const SizedBox(height: 8),
             Text(
               'Include salary, business income, side hustles — everything.',
@@ -177,7 +184,9 @@ class _IncomeStep extends StatelessWidget {
             const SizedBox(height: 28),
             TextFormField(
               controller: controller,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               inputFormatters: [
                 FilteringTextInputFormatter.allow(RegExp(r'[\d,.]')),
               ],
@@ -196,19 +205,24 @@ class _IncomeStep extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: AppTheme.primaryContainer,
+                color: Theme.of(context).colorScheme.surfaceContainerLow,
                 borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppTheme.primary.withValues(alpha: 0.2)),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.info_outline,
-                      color: AppTheme.primary, size: 18),
+                  const Icon(
+                    Icons.info_outline,
+                    color: AppTheme.primary,
+                    size: 18,
+                  ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       'Your income stays on-device and is never shared.',
-                      style: theme.textTheme.bodySmall
-                          ?.copyWith(color: AppTheme.primary),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: AppTheme.primary,
+                      ),
                     ),
                   ),
                 ],
@@ -251,9 +265,7 @@ class _AllocationStep extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: isOver
-                  ? AppTheme.errorLight
-                  : AppTheme.primaryContainer,
+              color: isOver ? AppTheme.errorLight : Theme.of(context).colorScheme.surfaceContainerLow,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -280,7 +292,9 @@ class _AllocationStep extends StatelessWidget {
                   ),
                 ),
                 Icon(
-                  isOver ? Icons.warning_amber_rounded : Icons.pie_chart_outline,
+                  isOver
+                      ? Icons.warning_amber_rounded
+                      : Icons.pie_chart_outline,
                   color: isOver ? AppTheme.error : AppTheme.primary,
                 ),
               ],
@@ -349,7 +363,7 @@ class _CategorySliderRow extends StatelessWidget {
                     Text(category.name, style: theme.textTheme.titleSmall),
                     Text(
                       '${percent.toStringAsFixed(0)}%'
-                      '${kshAmount > 0 ? '  Â·  Ksh ${_fmt(kshAmount)}' : ''}',
+                      '${kshAmount > 0 ? '  ·  Ksh ${_fmt(kshAmount)}' : ''}',
                       style: theme.textTheme.labelMedium?.copyWith(
                         color: percent > 0 ? category.color : null,
                       ),
@@ -362,8 +376,12 @@ class _CategorySliderRow extends StatelessWidget {
                     thumbColor: category.color,
                     inactiveTrackColor: category.color.withValues(alpha: 0.15),
                     trackHeight: 4,
-                    thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
-                    overlayShape: const RoundSliderOverlayShape(overlayRadius: 16),
+                    thumbShape: const RoundSliderThumbShape(
+                      enabledThumbRadius: 8,
+                    ),
+                    overlayShape: const RoundSliderOverlayShape(
+                      overlayRadius: 16,
+                    ),
                   ),
                   child: Slider(
                     value: percent,

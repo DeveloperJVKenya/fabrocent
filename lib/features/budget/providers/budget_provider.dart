@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/database/isar_service.dart';
 import '../../../core/models/budget.dart';
@@ -9,7 +10,12 @@ import '../../transactions/providers/transactions_provider.dart';
 // ─── Active budget plan ───────────────────────────────────────────────────
 
 final activeBudgetPlanProvider = FutureProvider<BudgetPlan?>((ref) async {
-  final user = ref.watch(currentUserProvider);
+  if (kIsWeb) {
+    // Isar not available on web — budgets are native-only for now.
+    AppLogger.budget('activeBudgetPlan [web]: returning null (native-only feature)');
+    return null;
+  }
+  final user   = ref.watch(currentUserProvider);
   final period = ref.watch(activePeriodProvider).valueOrNull;
   if (user == null || period == null) return null;
   return IsarService.getBudgetPlan(userId: user.uid, periodId: period.periodId);
@@ -18,21 +24,24 @@ final activeBudgetPlanProvider = FutureProvider<BudgetPlan?>((ref) async {
 // ─── Budget allocations with live spent amounts ───────────────────────────
 
 final budgetAllocationsProvider = FutureProvider<List<BudgetAllocation>>((ref) async {
-  final user = ref.watch(currentUserProvider);
+  if (kIsWeb) {
+    AppLogger.budget('budgetAllocations [web]: returning empty (native-only feature)');
+    return [];
+  }
+  final user   = ref.watch(currentUserProvider);
   final period = ref.watch(activePeriodProvider).valueOrNull;
   if (user == null || period == null) return [];
 
   final allocations = await IsarService.getBudgetAllocations(
-    userId: user.uid,
+    userId:   user.uid,
     periodId: period.periodId,
   );
   if (allocations.isEmpty) return [];
 
-  // Compute spent amounts live from transactions (accurate even after re-categorisation)
   final categoryTotals = await IsarService.getCategoryTotals(
-    userId: user.uid,
-    start: period.startDate,
-    end: period.endDate,
+    userId:    user.uid,
+    start:     period.startDate,
+    end:       period.endDate,
     creditOnly: false,
   );
 

@@ -1,6 +1,7 @@
-﻿import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:material_ui/material_ui.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
+
 import '../../../core/l10n/inherited_strings.dart';
 import '../../../core/models/transaction.dart';
 import '../../../core/models/transaction_category.dart';
@@ -60,7 +61,8 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                   ),
                 ),
                 style: theme.textTheme.bodyMedium,
-                onChanged: (v) => setState(() => _searchQuery = v.toLowerCase()),
+                onChanged: (v) =>
+                    setState(() => _searchQuery = v.toLowerCase()),
               )
             : Text(InheritedStrings.of(context).transactionsTitle),
         actions: [
@@ -82,9 +84,11 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
             Padding(
               padding: const EdgeInsets.only(right: 4),
               child: FilterChip(
-                label: Text(_showUntaggedOnly
-                    ? InheritedStrings.of(context).filterUntagged
-                    : InheritedStrings.of(context).filterAll),
+                label: Text(
+                  _showUntaggedOnly
+                      ? InheritedStrings.of(context).filterUntagged
+                      : InheritedStrings.of(context).filterAll,
+                ),
                 selected: _showUntaggedOnly,
                 onSelected: (v) => setState(() => _showUntaggedOnly = v),
                 avatar: Icon(
@@ -101,8 +105,9 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
               tooltip: InheritedStrings.of(context).importSms,
               onPressed: importState.isLoading
                   ? null
-                  : () =>
-                      ref.read(smsImportProvider.notifier).importHistoricalSms(),
+                  : () => ref
+                        .read(smsImportProvider.notifier)
+                        .importHistoricalSms(),
             ),
         ],
       ),
@@ -114,9 +119,13 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
 
           if (filtered.isEmpty) {
             return _EmptyState(
-              isFiltered: _showUntaggedOnly || _filterCategory != null || _searchQuery.isNotEmpty,
+              isFiltered:
+                  _showUntaggedOnly ||
+                  _filterCategory != null ||
+                  _searchQuery.isNotEmpty,
               isImporting: importState.isLoading,
-              onImport: () => ref.read(smsImportProvider.notifier).importHistoricalSms(),
+              onImport: () =>
+                  ref.read(smsImportProvider.notifier).importHistoricalSms(),
             );
           }
 
@@ -129,13 +138,13 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                     value: importState.total > 0
                         ? importState.imported / importState.total
                         : null,
-                    backgroundColor: AppTheme.primaryContainer,
+                    backgroundColor: AppTheme.primary.withValues(alpha: 0.15),
                     color: AppTheme.primary,
                   ),
                 ),
 
               // Untagged banner
-              ...(!_showUntaggedOnly ? [_buildUntaggedBanner(transactions, theme)] : []),
+              if (!_showUntaggedOnly) _buildUntaggedBanner(transactions, theme),
 
               // Date-grouped transaction list
               ..._buildGroupedList(filtered, theme),
@@ -168,7 +177,9 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
 
   Widget _buildUntaggedBanner(List<Transaction> transactions, ThemeData theme) {
     final untaggedCount = transactions.where((t) => t.isUntagged).length;
-    if (untaggedCount == 0) return const SliverToBoxAdapter(child: SizedBox.shrink());
+    if (untaggedCount == 0) {
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
 
     return SliverToBoxAdapter(
       child: GestureDetector(
@@ -194,7 +205,11 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                   ),
                 ),
               ),
-              const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppTheme.warning),
+              const Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 14,
+                color: AppTheme.warning,
+              ),
             ],
           ),
         ),
@@ -202,7 +217,10 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
     );
   }
 
-  List<Widget> _buildGroupedList(List<Transaction> transactions, ThemeData theme) {
+  List<Widget> _buildGroupedList(
+    List<Transaction> transactions,
+    ThemeData theme,
+  ) {
     if (transactions.isEmpty) return [];
 
     // Group by date
@@ -214,25 +232,27 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
 
     final widgets = <Widget>[];
     for (final entry in groups.entries) {
-      widgets.add(SliverToBoxAdapter(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 6),
-          child: Text(
-            entry.key,
-            style: theme.textTheme.labelMedium?.copyWith(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-              letterSpacing: 0.8,
-              fontWeight: FontWeight.w700,
+      widgets.add(
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 6),
+            child: Text(
+              entry.key,
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                letterSpacing: 0.8,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
         ),
-      ));
+      );
 
-      widgets.add(SliverPadding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        sliver: SliverList(
-          delegate: SliverChildBuilderDelegate(
-            (context, index) {
+      widgets.add(
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          sliver: SliverList(
+            delegate: SliverChildBuilderDelegate((context, index) {
               final txn = entry.value[index];
               return Padding(
                 padding: const EdgeInsets.only(bottom: 8),
@@ -241,11 +261,10 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                   onTap: () => CategoryTagSheet.show(context, txn),
                 ),
               );
-            },
-            childCount: entry.value.length,
+            }, childCount: entry.value.length),
           ),
         ),
-      ));
+      );
     }
 
     // Bottom padding
@@ -265,7 +284,20 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
       const days = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
       return days[dt.weekday - 1];
     }
-    const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+    const months = [
+      'JAN',
+      'FEB',
+      'MAR',
+      'APR',
+      'MAY',
+      'JUN',
+      'JUL',
+      'AUG',
+      'SEP',
+      'OCT',
+      'NOV',
+      'DEC',
+    ];
     return '${dt.day} ${months[dt.month - 1]}';
   }
 }
@@ -295,10 +327,14 @@ class _EmptyState extends StatelessWidget {
               width: 72,
               height: 72,
               decoration: BoxDecoration(
-                color: AppTheme.primaryContainer,
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: const Icon(Icons.receipt_long_outlined, color: AppTheme.primary, size: 36),
+              child: const Icon(
+                Icons.receipt_long_outlined,
+                color: AppTheme.primary,
+                size: 36,
+              ),
             ),
             const SizedBox(height: 20),
             Text(
@@ -317,7 +353,14 @@ class _EmptyState extends StatelessWidget {
               ElevatedButton.icon(
                 onPressed: isImporting ? null : onImport,
                 icon: isImporting
-                    ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
                     : const Icon(Icons.download_rounded),
                 label: Text(isImporting ? s.importing : s.importSms),
               ),

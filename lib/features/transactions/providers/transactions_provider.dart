@@ -10,7 +10,9 @@ import '../../../core/models/transaction_category.dart';
 import '../../../core/providers/firebase_providers.dart';
 import '../../../core/providers/web_data_providers.dart';
 import '../../../core/services/app_logger.dart';
+import '../../../core/providers/settings_provider.dart';
 import '../../../core/services/notification_service.dart';
+import '../../../core/sms/bank_sms_parser.dart';
 import '../../../core/sms/sms_channel.dart';
 import '../../../core/sms/sms_parser.dart';
 
@@ -136,12 +138,40 @@ class SmsImportNotifier extends StateNotifier<SmsImportState> {
       }
 
       await IsarService.saveTransactions(transactions);
+
+      // Bank SMS (opt-in, Android only)
+      var bankCount = 0;
+      if (!kIsWeb) {
+        final bankPrefs = await loadBankSmsPrefs();
+        if (bankPrefs.enabled && bankPrefs.enabledSenders.isNotEmpty) {
+          final bankRaw = <Map<String, dynamic>>[];
+          for (final sender in bankPrefs.enabledSenders) {
+            try {
+              final bankMsgs = await SmsChannel.getInboxSms(address: sender);
+              bankRaw.addAll(bankMsgs.map(
+                (m) => {'address': m.address, 'body': m.body, 'date': m.date},
+              ));
+            } catch (_) {}
+          }
+          if (bankRaw.isNotEmpty) {
+            final bankTxns = BankSmsParser.parseAll(
+              bankRaw, user.uid, bankPrefs.enabledSenders.toSet(),
+            );
+            for (final txn in bankTxns) {
+              txn.periodId = FinancialPeriod.idForDate(txn.dateTime);
+            }
+            await IsarService.saveTransactions(bankTxns);
+            bankCount = bankTxns.length;
+          }
+        }
+      }
+
       await _ensureActivePeriod(user.uid);
 
-      AppLogger.sms('✅ Import complete — ${transactions.length} transaction(s) saved');
+      AppLogger.sms('✅ Import complete — ${transactions.length} M-Pesa + $bankCount bank transaction(s) saved');
       state = state.copyWith(
         isLoading: false,
-        imported: transactions.length,
+        imported: transactions.length + bankCount,
       );
     } catch (e, st) {
       AppLogger.error('📱 SMS', 'Historical SMS import failed', e, st);

@@ -1,9 +1,12 @@
-﻿import 'package:material_ui/material_ui.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
+
 import '../../../core/l10n/inherited_strings.dart';
 import '../../../core/models/budget.dart';
 import '../../../core/theme/app_theme.dart';
 import '../providers/budget_provider.dart';
+import '../../transactions/providers/transactions_provider.dart';
 import 'budget_setup_screen.dart';
 
 class BudgetScreen extends ConsumerWidget {
@@ -29,9 +32,13 @@ class BudgetScreen extends ConsumerWidget {
         ],
       ),
       body: planAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
+        loading: () => const Center(
+          child: CircularProgressIndicator(color: AppTheme.primary),
+        ),
+        error: (e, _) => _BudgetError(error: e),
         data: (plan) {
+          if (kIsWeb) return const _WebBudgetNotice();
+
           if (plan == null) {
             return _EmptyBudget(onSetUp: () => _openSetup(context));
           }
@@ -41,6 +48,7 @@ class BudgetScreen extends ConsumerWidget {
             onRefresh: () async {
               ref.invalidate(budgetAllocationsProvider);
               ref.invalidate(activeBudgetPlanProvider);
+              ref.invalidate(activePeriodProvider);
             },
             child: allocationsAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
@@ -58,16 +66,20 @@ class BudgetScreen extends ConsumerWidget {
                   if (allocations.isEmpty)
                     SliverFillRemaining(
                       child: Center(
-                        child: Text(InheritedStrings.of(context).noAllocations,
-                            style: theme.textTheme.bodySmall),
+                        child: Text(
+                          InheritedStrings.of(context).noAllocations,
+                          style: theme.textTheme.bodySmall,
+                        ),
                       ),
                     )
                   else ...[
                     SliverPadding(
                       padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
                       sliver: SliverToBoxAdapter(
-                        child: Text(InheritedStrings.of(context).spendingLimits,
-                            style: theme.textTheme.titleLarge),
+                        child: Text(
+                          InheritedStrings.of(context).spendingLimits,
+                          style: theme.textTheme.titleLarge,
+                        ),
                       ),
                     ),
                     SliverPadding(
@@ -100,7 +112,111 @@ class BudgetScreen extends ConsumerWidget {
   }
 }
 
-// â”€â”€â”€ Empty state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Web notice (budget is native-only) ──────────────────────────────────────
+
+class _WebBudgetNotice extends StatelessWidget {
+  const _WebBudgetNotice();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(22),
+              decoration: BoxDecoration(
+                color:  theme.colorScheme.onSurface.withValues(alpha: 0.08),
+                shape:  BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.phone_android_rounded,
+                color: AppTheme.primary,
+                size:  44,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Budget on Mobile',
+              style: theme.textTheme.headlineSmall,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'Set spending limits and get real-time overspend alerts in the '
+              'FabroCent Android app. Download it to unlock the full budget experience.',
+              style: theme.textTheme.bodyMedium,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 28),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              decoration: BoxDecoration(
+                color:        theme.colorScheme.surfaceContainerLow,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppTheme.primary.withValues(alpha: 0.3)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.check_circle_outline, color: AppTheme.primary, size: 18),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Your data syncs automatically once installed',
+                    style: theme.textTheme.bodySmall?.copyWith(color: AppTheme.primary),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Budget load error ────────────────────────────────────────────────────────
+
+class _BudgetError extends StatelessWidget {
+  final Object error;
+  const _BudgetError({required this.error});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color:        AppTheme.errorLight,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Icon(Icons.error_outline_rounded, color: AppTheme.error, size: 36),
+            ),
+            const SizedBox(height: 16),
+            Text('Could not load budget', style: theme.textTheme.headlineSmall),
+            const SizedBox(height: 8),
+            Text(
+              'Please restart the app or pull down to refresh.',
+              style: theme.textTheme.bodyMedium,
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Empty state ─────────────────────────────────────────────────────────────
 
 class _EmptyBudget extends StatelessWidget {
   final VoidCallback onSetUp;
@@ -117,9 +233,11 @@ class _EmptyBudget extends StatelessWidget {
           children: [
             Text('💰', style: const TextStyle(fontSize: 56)),
             const SizedBox(height: 16),
-            Text(InheritedStrings.of(context).setBudgetTitle,
-                style: theme.textTheme.headlineSmall,
-                textAlign: TextAlign.center),
+            Text(
+              InheritedStrings.of(context).setBudgetTitle,
+              style: theme.textTheme.headlineSmall,
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: 8),
             Text(
               InheritedStrings.of(context).setBudgetSubtitle,
@@ -138,7 +256,7 @@ class _EmptyBudget extends StatelessWidget {
   }
 }
 
-// â”€â”€â”€ Income summary card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Income summary card ─────────────────────────────────────────────────────
 
 class _IncomeCard extends StatelessWidget {
   final double expectedIncome;
@@ -163,20 +281,28 @@ class _IncomeCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(InheritedStrings.of(context).expectedMonthlyIncome,
-                    style: theme.textTheme.labelMedium
-                        ?.copyWith(color: Colors.white70)),
+                Text(
+                  InheritedStrings.of(context).expectedMonthlyIncome,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: Colors.white70,
+                  ),
+                ),
                 const SizedBox(height: 4),
                 Text(
                   'Ksh ${_fmt(expectedIncome)}',
-                  style: theme.textTheme.headlineMedium
-                      ?.copyWith(color: Colors.white, fontWeight: FontWeight.w800),
+                  style: theme.textTheme.headlineMedium?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ],
             ),
           ),
-          const Icon(Icons.account_balance_wallet_outlined,
-              color: Colors.white70, size: 36),
+          const Icon(
+            Icons.account_balance_wallet_outlined,
+            color: Colors.white70,
+            size: 36,
+          ),
         ],
       ),
     );
@@ -188,7 +314,7 @@ class _IncomeCard extends StatelessWidget {
   }
 }
 
-// â”€â”€â”€ Allocation card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Allocation card ─────────────────────────────────────────────────────────
 
 class _AllocationCard extends StatelessWidget {
   final BudgetAllocation allocation;
@@ -206,8 +332,8 @@ class _AllocationCard extends StatelessWidget {
     final barColor = isOver
         ? AppTheme.expenseRed
         : isWarning
-            ? AppTheme.warning
-            : cat.color;
+        ? AppTheme.warning
+        : cat.color;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -232,15 +358,20 @@ class _AllocationCard extends StatelessWidget {
               ),
               if (isOver)
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: AppTheme.expenseRed.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Text(s.over,
-                      style: theme.textTheme.labelSmall
-                          ?.copyWith(color: AppTheme.expenseRed)),
+                  child: Text(
+                    s.over,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: AppTheme.expenseRed,
+                    ),
+                  ),
                 ),
             ],
           ),
@@ -264,7 +395,11 @@ class _AllocationCard extends StatelessWidget {
               ),
               Text(
                 isOver
-                    ? s.budgetOverBy(_fmt(allocation.spentAmount - allocation.allocatedAmount))
+                    ? s.budgetOverBy(
+                        _fmt(
+                          allocation.spentAmount - allocation.allocatedAmount,
+                        ),
+                      )
                     : s.budgetLeft(_fmt(allocation.remainingAmount)),
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: isOver ? AppTheme.expenseRed : null,
@@ -275,8 +410,10 @@ class _AllocationCard extends StatelessWidget {
           ),
           const SizedBox(height: 2),
           Text(
-            s.budgetLine(_fmt(allocation.allocatedAmount),
-                allocation.allocatedPercent.toStringAsFixed(0)),
+            s.budgetLine(
+              _fmt(allocation.allocatedAmount),
+              allocation.allocatedPercent.toStringAsFixed(0),
+            ),
             style: theme.textTheme.labelSmall,
           ),
         ],

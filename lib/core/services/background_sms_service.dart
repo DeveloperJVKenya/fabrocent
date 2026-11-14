@@ -3,6 +3,8 @@ import 'package:workmanager/workmanager.dart';
 
 import '../database/isar_service.dart';
 import '../models/financial_period.dart';
+import '../providers/settings_provider.dart';
+import '../sms/bank_sms_parser.dart';
 import '../sms/sms_channel.dart';
 import '../sms/sms_parser.dart';
 import 'app_logger.dart';
@@ -47,6 +49,35 @@ void callbackDispatcher() {
       }
       await IsarService.saveTransactions(transactions);
       AppLogger.sms('Background: saved ${transactions.length} new transaction(s) to Isar');
+
+      // Bank SMS (opt-in)
+      final bankPrefs = await loadBankSmsPrefs();
+      if (bankPrefs.enabled && bankPrefs.enabledSenders.isNotEmpty) {
+        final bankRaw = <Map<String, dynamic>>[];
+        for (final sender in bankPrefs.enabledSenders) {
+          try {
+            final bankMsgs = await SmsChannel.getInboxSms(address: sender);
+            final recentBank = bankMsgs.where(
+              (m) => DateTime.fromMillisecondsSinceEpoch(m.date).isAfter(cutoff),
+            );
+            bankRaw.addAll(
+              recentBank.map((m) => {'address': m.address, 'body': m.body, 'date': m.date}),
+            );
+          } catch (e) {
+            AppLogger.sms('Background: could not read SMS from $sender — $e');
+          }
+        }
+        if (bankRaw.isNotEmpty) {
+          final bankTxns = BankSmsParser.parseAll(
+            bankRaw, userId, bankPrefs.enabledSenders.toSet(),
+          );
+          for (final txn in bankTxns) {
+            txn.periodId = FinancialPeriod.idForDate(txn.dateTime);
+          }
+          await IsarService.saveTransactions(bankTxns);
+          AppLogger.sms('Background: saved ${bankTxns.length} bank transaction(s) to Isar');
+        }
+      }
     } catch (e, st) {
       AppLogger.error('📱 SMS', 'Background SMS check failed', e, st);
       // Errors also surface in Crashlytics via the zone in main.dart

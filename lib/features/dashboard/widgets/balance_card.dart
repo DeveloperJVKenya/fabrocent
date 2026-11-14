@@ -1,4 +1,5 @@
-﻿import 'package:material_ui/material_ui.dart';
+import 'package:material_ui/material_ui.dart';
+
 import '../../../core/l10n/inherited_strings.dart';
 import '../../../core/models/financial_period.dart';
 import '../../../core/theme/app_theme.dart';
@@ -53,8 +54,10 @@ class BalanceCard extends StatelessWidget {
                 ),
               ),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(20),
@@ -63,9 +66,7 @@ class BalanceCard extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
-                      isPositive
-                          ? Icons.trending_up
-                          : Icons.trending_down,
+                      isPositive ? Icons.trending_up : Icons.trending_down,
                       color: Colors.white,
                       size: 14,
                     ),
@@ -73,9 +74,10 @@ class BalanceCard extends StatelessWidget {
                     Text(
                       isPositive ? s.surplus : s.deficit,
                       style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600),
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ],
                 ),
@@ -125,7 +127,8 @@ class BalanceCard extends StatelessWidget {
   }
 
   String _formatKes(double amount) {
-    if (amount >= 1000000) return 'Ksh ${(amount / 1000000).toStringAsFixed(1)}M';
+    if (amount >= 1000000)
+      return 'Ksh ${(amount / 1000000).toStringAsFixed(1)}M';
     if (amount >= 1000) {
       final parts = amount.toStringAsFixed(2).split('.');
       final intPart = parts[0];
@@ -173,14 +176,17 @@ class _StatItem extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label,
-                    style: const TextStyle(color: Colors.white60, fontSize: 11)),
+                Text(
+                  label,
+                  style: const TextStyle(color: Colors.white60, fontSize: 11),
+                ),
                 Text(
                   _fmt(value),
                   style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700),
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),

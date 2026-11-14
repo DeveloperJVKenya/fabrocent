@@ -1,9 +1,9 @@
-﻿import 'package:material_ui/material_ui.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:permission_handler/permission_handler.dart';
+
 import '../../../core/l10n/inherited_strings.dart';
 import '../../../core/router/app_router.dart';
-import '../../../core/services/app_logger.dart';
 import '../../../core/theme/app_theme.dart';
 
 class PermissionsScreen extends StatefulWidget {
@@ -27,7 +27,6 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
   Future<void> _checkExisting() async {
     final sms = await Permission.sms.status;
     final notif = await Permission.notification.status;
-    AppLogger.ui('Permissions check: SMS=${sms.name} notifications=${notif.name}');
     setState(() {
       _smsGranted = sms.isGranted;
       _notifGranted = notif.isGranted;
@@ -35,10 +34,8 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
   }
 
   Future<void> _requestSms() async {
-    AppLogger.ui('Requesting SMS permission');
     setState(() => _checking = true);
     final result = await Permission.sms.request();
-    AppLogger.ui('SMS permission result: ${result.name}');
     setState(() {
       _smsGranted = result.isGranted;
       _checking = false;
@@ -46,10 +43,8 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
   }
 
   Future<void> _requestNotifications() async {
-    AppLogger.ui('Requesting notification permission');
     setState(() => _checking = true);
     final result = await Permission.notification.request();
-    AppLogger.ui('Notification permission result: ${result.name}');
     setState(() {
       _notifGranted = result.isGranted;
       _checking = false;
@@ -58,10 +53,8 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
 
   void _proceed() {
     if (_smsGranted) {
-      AppLogger.ui('Permissions: SMS granted — proceeding to profile setup');
       context.go(AppRoutes.profileSetup);
     } else {
-      AppLogger.warn('🖼  UI', 'Permissions: SMS not granted — user blocked from proceeding');
       _showSmsRequired();
     }
   }
@@ -131,20 +124,25 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: AppTheme.primaryContainer,
+                  color: theme.colorScheme.surfaceContainerLow,
                   borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppTheme.primary.withValues(alpha: 0.2)),
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.shield_outlined,
-                        color: AppTheme.primary, size: 20),
+                    const Icon(
+                      Icons.shield_outlined,
+                      color: AppTheme.primary,
+                      size: 20,
+                    ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         s.permPrivacy,
-                        style: theme.textTheme.bodySmall
-                            ?.copyWith(color: AppTheme.primary),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: AppTheme.primary,
+                        ),
                       ),
                     ),
                   ],
@@ -155,7 +153,9 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
 
               ElevatedButton(
                 onPressed: _checking ? null : _proceed,
-                child: Text(_smsGranted ? s.permContinue : s.permGrantAndContinue),
+                child: Text(
+                  _smsGranted ? s.permContinue : s.permGrantAndContinue,
+                ),
               ),
               const SizedBox(height: 24),
             ],
@@ -211,9 +211,7 @@ class _PermissionCard extends StatelessWidget {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: isGranted
-                  ? AppTheme.primaryContainer
-                  : theme.colorScheme.surfaceContainerHighest,
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
@@ -236,16 +234,21 @@ class _PermissionCard extends StatelessWidget {
                     if (isRequired)
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: AppTheme.errorLight,
                           borderRadius: BorderRadius.circular(4),
                         ),
-                        child: Text(required_,
-                            style: const TextStyle(
-                                color: AppTheme.error,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700)),
+                        child: Text(
+                          required_,
+                          style: const TextStyle(
+                            color: AppTheme.error,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
                       ),
                   ],
                 ),
@@ -259,8 +262,7 @@ class _PermissionCard extends StatelessWidget {
                       onPressed: isLoading ? null : onGrant,
                       style: OutlinedButton.styleFrom(
                         minimumSize: Size.zero,
-                        padding:
-                            const EdgeInsets.symmetric(horizontal: 16),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
                       ),
                       child: Text(allow_),
                     ),

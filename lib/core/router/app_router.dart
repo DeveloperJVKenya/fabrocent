@@ -1,8 +1,7 @@
-﻿import 'package:flutter/foundation.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:logger/logger.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../features/budget/screens/budget_screen.dart';
 import '../../features/dashboard/screens/dashboard_screen.dart';
@@ -15,25 +14,10 @@ import '../../features/settings/screens/settings_screen.dart';
 import '../../features/transactions/screens/transactions_screen.dart';
 import '../l10n/inherited_strings.dart';
 import '../providers/firebase_providers.dart';
+import '../services/app_logger.dart';
 import '../services/background_sms_service.dart';
 import '../services/period_service.dart';
 import '../services/remote_config_service.dart';
-
-final _logger = Logger(
-  printer: PrettyPrinter(
-    methodCount: 1,
-    errorMethodCount: 5,
-    lineLength: 120,
-    colors: true,
-    printEmojis: true,
-    dateTimeFormat: DateTimeFormat.onlyTimeAndSinceStart,
-  ),
-);
-
-// Timestamp for auth-loading timeout — set once at module load (= app start).
-// If auth/profile streams haven't resolved after 7 s, treat as unauthenticated
-// rather than hanging on the splash screen indefinitely (critical on web).
-final _routerLoadStart = DateTime.now();
 
 class AppRoutes {
   static const splash = '/';
@@ -51,48 +35,57 @@ final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: AppRoutes.splash,
     redirect: (context, state) {
-      final isLoading = authState.isLoading || userProfile.isLoading;
-      final location = state.matchedLocation;
+      final authLoading    = authState.isLoading;
+      final profileLoading = userProfile.isLoading;
+      final isLoading      = authLoading || profileLoading;
 
-      _logger.d(
-        '🔀 Router: redirect → "$location" | '
-        'authLoading=${authState.isLoading} profileLoading=${userProfile.isLoading}',
+      AppLogger.router(
+        'redirect fired — location="${state.matchedLocation}" '
+        'authLoading=$authLoading profileLoading=$profileLoading '
+        'authUser=${authState.valueOrNull?.uid ?? "null"} '
+        'profileExists=${userProfile.valueOrNull != null} '
+        'onboarded=${userProfile.valueOrNull?.onboardingComplete}',
       );
 
       if (isLoading) {
-        final elapsed = DateTime.now().difference(_routerLoadStart);
-        if (elapsed.inSeconds < 7) {
-          _logger.d('🔀 Router: waiting for auth/profile (${elapsed.inMilliseconds}ms elapsed)...');
-          return null;
-        }
-        // Safety valve: auth streams haven't resolved — stop waiting and go to welcome.
-        _logger.w('🔀 Router: auth loading timed out after ${elapsed.inSeconds}s — routing as unauthenticated');
-        return AppRoutes.welcome;
+        AppLogger.router('→ still loading — staying on splash');
+        return null;
       }
 
       final user = authState.valueOrNull;
       final profile = userProfile.valueOrNull;
+      final location = state.matchedLocation;
 
       if (user == null) {
-        _logger.i('🔀 Router: no authenticated user at "$location"');
-        if (location == AppRoutes.welcome ||
-            location == AppRoutes.auth) { return null; }
-        _logger.d('🔀 Router: redirecting to ${AppRoutes.welcome}');
+        // Splash is a loading screen only — once loading is done, move on.
+        if (location == AppRoutes.splash) {
+          AppLogger.router('→ no user, loading done — redirecting splash to welcome');
+          return AppRoutes.welcome;
+        }
+        if (location == AppRoutes.welcome || location == AppRoutes.auth) {
+          AppLogger.router('→ no user, already on auth flow — no redirect');
+          return null;
+        }
+        AppLogger.router('→ no user — redirecting to welcome');
         return AppRoutes.welcome;
       }
-
-      _logger.d('🔀 Router: user=${user.uid} | profile=${profile == null ? "null" : "onboarded=${profile.onboardingComplete}"}');
 
       if (profile == null || !profile.onboardingComplete) {
         // Web: skip SMS permissions screen — go straight to profile setup
         if (kIsWeb) {
-          if (location == AppRoutes.profileSetup) return null;
-          _logger.d('🔀 Router: web — redirecting to ${AppRoutes.profileSetup}');
+          if (location == AppRoutes.profileSetup) {
+            AppLogger.router('→ onboarding incomplete (web) — already on profile-setup');
+            return null;
+          }
+          AppLogger.router('→ onboarding incomplete (web) — redirecting to profile-setup');
           return AppRoutes.profileSetup;
         }
         if (location == AppRoutes.permissions ||
-            location == AppRoutes.profileSetup) { return null; }
-        _logger.d('🔀 Router: redirecting to ${AppRoutes.permissions}');
+            location == AppRoutes.profileSetup) {
+          AppLogger.router('→ onboarding incomplete — already on onboarding screen');
+          return null;
+        }
+        AppLogger.router('→ onboarding incomplete — redirecting to permissions');
         return AppRoutes.permissions;
       }
 
@@ -101,24 +94,34 @@ final routerProvider = Provider<GoRouter>((ref) {
           location == AppRoutes.auth ||
           location == AppRoutes.permissions ||
           location == AppRoutes.profileSetup) {
-        _logger.i('✅ Router: onboarding complete — redirecting to ${AppRoutes.home}');
+        AppLogger.router('→ fully authenticated & onboarded — redirecting to home');
         return AppRoutes.home;
       }
 
+      AppLogger.router('→ no redirect needed');
       return null;
     },
     routes: [
       GoRoute(path: AppRoutes.splash, builder: (_, _) => const SplashScreen()),
-      GoRoute(path: AppRoutes.welcome, builder: (_, _) => const WelcomeScreen()),
+      GoRoute(
+        path: AppRoutes.welcome,
+        builder: (_, _) => const WelcomeScreen(),
+      ),
       GoRoute(path: AppRoutes.auth, builder: (_, _) => const AuthScreen()),
-      GoRoute(path: AppRoutes.permissions, builder: (_, _) => const PermissionsScreen()),
-      GoRoute(path: AppRoutes.profileSetup, builder: (_, _) => const ProfileSetupScreen()),
+      GoRoute(
+        path: AppRoutes.permissions,
+        builder: (_, _) => const PermissionsScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.profileSetup,
+        builder: (_, _) => const ProfileSetupScreen(),
+      ),
       GoRoute(path: AppRoutes.home, builder: (_, _) => const HomeShell()),
     ],
   );
 });
 
-// â”€â”€â”€ Home shell (bottom nav) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Home shell (bottom nav) ──────────────────────────────────────────────────
 
 class HomeShell extends ConsumerStatefulWidget {
   const HomeShell({super.key});
@@ -137,17 +140,6 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     SettingsScreen(),
   ];
 
-  final _logger = Logger(
-    printer: PrettyPrinter(
-      methodCount: 2,
-      errorMethodCount: 5,
-      lineLength: 120,
-      colors: true,
-      printEmojis: true,
-      dateTimeFormat: DateTimeFormat.onlyTimeAndSinceStart,
-    ),
-  );
-
   @override
   void initState() {
     super.initState();
@@ -156,50 +148,23 @@ class _HomeShellState extends ConsumerState<HomeShell> {
 
   Future<void> _startupServices() async {
     final user = ref.read(currentUserProvider);
-    if (user == null) {
-      _logger.d('🏠 HomeShell: no user — skipping startup services');
-      return;
-    }
-    _logger.i('🏠 HomeShell: starting services for user ${user.uid}');
+    if (user == null) return;
 
     if (!kIsWeb) {
       // Ensure there's an active financial period for this month (Isar)
-      _logger.d('🏠 HomeShell: ensuring current financial period');
-      try {
-        await PeriodService.ensureCurrentPeriod(user.uid);
-        _logger.i('✅ HomeShell: financial period ensured');
-      } catch (e, st) {
-        _logger.e('❌ HomeShell: period setup failed', error: e, stackTrace: st);
-      }
+      await PeriodService.ensureCurrentPeriod(user.uid);
       // Schedule hourly background SMS catch-up
-      _logger.d('🏠 HomeShell: scheduling periodic SMS sync');
-      try {
-        await BackgroundSmsService.schedulePeriodicSync(user.uid);
-        _logger.i('✅ HomeShell: SMS sync scheduled');
-      } catch (e, st) {
-        _logger.e('❌ HomeShell: SMS sync scheduling failed', error: e, stackTrace: st);
-      }
+      await BackgroundSmsService.schedulePeriodicSync(user.uid);
     }
 
     // Remote Config works on all platforms
-    _logger.d('🏠 HomeShell: initializing Remote Config');
-    try {
-      await RemoteConfigService.initialize();
-      _logger.i('✅ HomeShell: Remote Config initialized');
-    } catch (e, st) {
-      _logger.w('⚠️ HomeShell: Remote Config init failed — using defaults', error: e, stackTrace: st);
-    }
-
-    _logger.i('✅ HomeShell: all startup services complete');
+    await RemoteConfigService.initialize();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _pages,
-      ),
+      body: IndexedStack(index: _currentIndex, children: _pages),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
         onDestinationSelected: (i) => setState(() => _currentIndex = i),
